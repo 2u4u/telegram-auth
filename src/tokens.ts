@@ -1,19 +1,23 @@
 import crypto from 'node:crypto';
 
-export function createTokenStore(maxAgeMs: number) {
-  const tokens = new Map<string, { expiresAt: number }>();
+export type TokenConsumeResult =
+  | { valid: true; chatId: string }
+  | { valid: false };
 
-  function generate(): string {
+export function createTokenStore(maxAgeMs: number) {
+  const tokens = new Map<string, { chatId: string; expiresAt: number }>();
+
+  function generate(chatId: string): string {
     const token = crypto.randomUUID();
-    tokens.set(token, { expiresAt: Date.now() + maxAgeMs });
+    tokens.set(token, { chatId, expiresAt: Date.now() + maxAgeMs });
     return token;
   }
 
-  function consume(token: string): boolean {
+  function consume(token: string): TokenConsumeResult {
     const entry = tokens.get(token);
     tokens.delete(token);
-    if (!entry || entry.expiresAt < Date.now()) return false;
-    return true;
+    if (!entry || entry.expiresAt < Date.now()) return { valid: false };
+    return { valid: true, chatId: entry.chatId };
   }
 
   function cleanup(): void {

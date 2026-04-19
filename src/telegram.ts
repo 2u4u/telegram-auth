@@ -16,16 +16,8 @@ export async function sendTelegramMessage(botToken: string, chatId: string, text
   }
 }
 
-export async function broadcastLoginLink(
-  botToken: string,
-  chatIds: string[],
-  appName: string,
-  loginUrl: string,
-  ip: string,
-  ua: string,
-  geo: string,
-): Promise<number> {
-  const lines = [
+function formatLoginMessage(appName: string, loginUrl: string, ip: string, ua: string, geo: string): string {
+  return [
     `🔐 ${appName} login link`,
     '',
     loginUrl,
@@ -34,11 +26,26 @@ export async function broadcastLoginLink(
     '',
     `📍 IP: ${ip}${geo ? ` (${geo})` : ''}`,
     `🌐 ${ua}`,
-  ];
-  const text = lines.join('\n');
+  ].join('\n');
+}
 
+/**
+ * Sends a chat-bound login link to each chatId. The URL is built per-chat via
+ * `buildLoginUrl`, so each recipient's session, when created, carries that
+ * specific chatId.
+ */
+export async function broadcastLoginLink(
+  botToken: string,
+  chatIds: string[],
+  appName: string,
+  buildLoginUrl: (chatId: string) => string,
+  ip: string,
+  ua: string,
+  geo: string,
+): Promise<number> {
   let sent = 0;
   for (const chatId of chatIds) {
+    const text = formatLoginMessage(appName, buildLoginUrl(chatId), ip, ua, geo);
     if (await sendTelegramMessage(botToken, chatId, text)) sent++;
   }
   return sent;

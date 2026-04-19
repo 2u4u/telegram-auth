@@ -54,9 +54,14 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
   const rateLimiter = createRateLimiter(rateLimitConfig.max, rateLimitConfig.windowMs);
   const normalizedAppUrl = appUrl.replace(/\/$/, '');
 
-  function hasValidSession(req: Request): boolean {
+  function getSessionChatId(req: Request): string | null {
     const cookies = parseCookies(req.headers.cookie);
-    if (session.validate(cookies[cookieName])) return true;
+    const result = session.validate(cookies[cookieName]);
+    return result.valid ? result.chatId : null;
+  }
+
+  function hasValidSession(req: Request): boolean {
+    if (getSessionChatId(req) !== null) return true;
     if (staticTokens.length > 0 && typeof req.query['token'] === 'string') {
       return staticTokens.includes(req.query['token']);
     }
@@ -71,7 +76,7 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
 
   async function sendLoginLink(chatId: string): Promise<string> {
     tokenStore.cleanup();
-    const token = tokenStore.generate();
+    const token = tokenStore.generate(chatId);
     const loginUrl = `${normalizedAppUrl}/api/auth/login/${token}`;
     const text = `🔐 ${appName} login link\n\n${loginUrl}\n\nValid for 2 hours. One-time use.`;
     const ok = await sendTelegramMessage(botToken, chatId, text);
@@ -112,10 +117,13 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     console.log(`[telegram-auth] login requested — IP: ${ip}${geo ? ` (${geo})` : ''} | UA: ${ua}`);
 
     tokenStore.cleanup();
-    const token = tokenStore.generate();
-    const loginUrl = `${normalizedAppUrl}/api/auth/login/${token}`;
 
-    const sent = await broadcastLoginLink(botToken, chatIds, appName, loginUrl, ip, ua, geo);
+    // Generate a chat-bound token per recipient so the resulting session
+    // carries the clicker's chatId.
+    const buildLoginUrl = (chatId: string) =>
+      `${normalizedAppUrl}/api/auth/login/${tokenStore.generate(chatId)}`;
+
+    const sent = await broadcastLoginLink(botToken, chatIds, appName, buildLoginUrl, ip, ua, geo);
 
     if (sent === 0) {
       res.status(502).json({ error: 'Failed to send login link' });
@@ -132,18 +140,19 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     const ua = req.headers['user-agent'] ?? 'unknown';
     const token = req.params.token;
 
-    if (!tokenStore.consume(token)) {
+    const consumed = tokenStore.consume(token);
+    if (!consumed.valid) {
       console.warn(`[telegram-auth] invalid/expired token from ${ip}`);
       onInvalidToken?.(ip, token);
       res.status(401).send(EXPIRED_HTML);
       return;
     }
 
-    session.set(res);
-    console.log(`[telegram-auth] session created — IP: ${ip} | UA: ${ua}`);
+    session.set(res, consumed.chatId);
+    console.log(`[telegram-auth] session created — chat ${consumed.chatId} | IP: ${ip} | UA: ${ua}`);
     onSessionCreated?.(ip, ua);
     res.redirect('/');
   });
 
-  return { router, requireSession, AUTH_ENABLED, sendLoginLink };
+  return { router, requireSession, AUTH_ENABLED, sendLoginLink, getSessionChatId };
 }

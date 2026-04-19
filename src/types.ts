@@ -41,4 +41,11 @@ export interface TelegramAuth {
    * Useful for bot /login commands.
    */
   sendLoginLink: (chatId: string) => Promise<string>;
+  /**
+   * Returns the chatId from the session cookie, or null when no valid session.
+   * Static-token (?token=) requests are intentionally treated as anonymous and
+   * return null — callers needing a chatId for those should resolve it
+   * separately (e.g. via a token→chatId mapping env var).
+   */
+  getSessionChatId: (req: import('express').Request) => string | null;
 }
