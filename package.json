@@ -1,6 +1,6 @@
 {
   "name": "@usmanov/telegram-auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Telegram passwordless auth middleware for Express apps",
   "type": "module",
   "main": "./dist/index.js",
