@@ -41,12 +41,12 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
       return crypto.randomBytes(32).toString('hex');
     })();
 
-  const AUTH_ENABLED = !!(botToken && chatIds.length > 0);
+  const AUTH_ENABLED = chatIds.length > 0;
 
   if (AUTH_ENABLED) {
-    console.log(`[telegram-auth] enabled — login links sent to ${chatIds.length} chat(s)`);
+    console.log(`[telegram-auth] enabled — login links sent via managed message endpoint for ${chatIds.length} chat(s)`);
   } else {
-    console.log('[telegram-auth] disabled — set botToken and chatIds to enable');
+    console.log('[telegram-auth] disabled — set chatIds to enable');
   }
 
   const session = createSessionManager(sessionSecret, cookieName, sessionMaxAge);

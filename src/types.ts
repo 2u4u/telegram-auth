@@ -1,8 +1,8 @@
 export interface TelegramAuthConfig {
   /** Cookie name, unique per app (e.g. 'sms_session', 'kalem_session') */
   cookieName: string;
-  /** Telegram bot token */
-  botToken: string;
+  /** Deprecated: ignored. Login messages are sent through the managed message endpoint. */
+  botToken?: string;
   /** Chat IDs to send login links to. Supports multiple (broadcast). */
   chatIds: string[];
   /** Public app URL, used to build the login link (no trailing slash) */
@@ -34,7 +34,7 @@ export interface TelegramAuth {
   router: import('express').Router;
   /** Express middleware requiring a valid session. Passes through if auth is disabled. */
   requireSession: import('express').RequestHandler;
-  /** Whether auth is enabled (botToken + chatIds both configured) */
+  /** Whether auth is enabled (chatIds configured) */
   AUTH_ENABLED: boolean;
   /**
    * Generate a one-time login link and send it to a specific chat.
