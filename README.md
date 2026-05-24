@@ -27,7 +27,7 @@ No passwords. No email. Telegram is the identity provider.
 - Per-IP rate limiting (in-memory, 3 requests / 10 min by default)
 - IP geolocation in Telegram message (via ip-api.com, optional)
 - `AUTH_ENABLED` flag — enabled when at least one chat ID is configured
-- Static bypass tokens via `?token=` (for iOS Shortcuts / automation)
+- Static bypass tokens via `Authorization: Bearer <token>` (for iOS Shortcuts / automation)
 
 ---
 
@@ -171,7 +171,7 @@ location / {
 | `tokenMaxAge` | — | 2h | One-time token lifetime in ms |
 | `rateLimit` | — | 3/10min | Per-IP rate limit for `/request` |
 | `geoLookup` | — | `true` | Include IP location in Telegram message |
-| `staticTokens` | — | `[]` | Bypass tokens accepted as `?token=` |
+| `staticTokens` | — | `[]` | Bypass tokens accepted as `Authorization: Bearer <token>` |
 
 ---
 

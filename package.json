@@ -15,6 +15,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
+    "test": "yarn build && node --test test/*.test.mjs",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
