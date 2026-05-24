@@ -6,6 +6,7 @@ import { createSessionManager } from './session.js';
 import { createTokenStore } from './tokens.js';
 import { createRateLimiter } from './rateLimit.js';
 import { lookupGeo } from './geo.js';
+import { getStaticBearerToken } from './staticToken.js';
 import { broadcastLoginLink, sendTelegramMessage } from './telegram.js';
 
 export type { TelegramAuthConfig, TelegramAuth } from './types.js';
@@ -63,9 +64,8 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
 
   function hasValidSession(req: Request): boolean {
     if (getSessionChatId(req) !== null) return true;
-    if (staticTokens.length > 0 && typeof req.query['token'] === 'string') {
-      return staticTokens.includes(req.query['token']);
-    }
+    const staticToken = getStaticBearerToken(req);
+    if (staticTokens.length > 0 && staticToken !== null) return staticTokens.includes(staticToken);
     return false;
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "@usmanov/telegram-auth",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Telegram passwordless auth middleware for Express apps",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,6 +15,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
+    "test": "yarn build && node --test test/*.test.mjs",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {

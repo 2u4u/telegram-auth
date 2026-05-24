@@ -21,7 +21,7 @@ export interface TelegramAuthConfig {
   rateLimit?: { max: number; windowMs: number };
   /** Whether to look up IP geolocation and include it in the Telegram message. Default: true */
   geoLookup?: boolean;
-  /** Static bypass tokens accepted as ?token= query param (for automated clients like iOS Shortcuts) */
+  /** Static bypass tokens accepted as Authorization: Bearer tokens (for automated clients like iOS Shortcuts) */
   staticTokens?: string[];
   /** Called on successful login token request (before Telegram send) */
   onLoginRequest?: (ip: string, ua: string, geo: string) => void;
@@ -45,7 +45,7 @@ export interface TelegramAuth {
   sendLoginLink: (chatId: string) => Promise<string>;
   /**
    * Returns the chatId from the session cookie, or null when no valid session.
-   * Static-token (?token=) requests are intentionally treated as anonymous and
+   * Static-token Authorization: Bearer requests are intentionally treated as anonymous and
    * return null — callers needing a chatId for those should resolve it
    * separately (e.g. via a token→chatId mapping env var).
    */
