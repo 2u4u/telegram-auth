@@ -27,6 +27,7 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     appName = 'App',
     sessionMaxAge = 24 * 60 * 60_000,
     secureCookie = false,
+    devBypass = false,
     tokenMaxAge = 2 * 60 * 60_000,
     rateLimit: rateLimitConfig = { max: 3, windowMs: 10 * 60_000 },
     geoLookup = true,
@@ -43,11 +44,16 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     })();
 
   const AUTH_ENABLED = chatIds.length > 0;
+  const warnings = devBypass ? ['auth-dev-bypass-active'] : [];
 
   if (AUTH_ENABLED) {
     console.log(`[telegram-auth] enabled — login links sent via managed message endpoint for ${chatIds.length} chat(s)`);
   } else {
-    console.log('[telegram-auth] disabled — set chatIds to enable');
+    console.warn('[telegram-auth] not configured — set chatIds to enable login links');
+  }
+
+  if (devBypass) {
+    console.warn('[telegram-auth] WARNING: development auth bypass is active');
   }
 
   const session = createSessionManager(sessionSecret, cookieName, sessionMaxAge, secureCookie);
@@ -62,6 +68,10 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
   }
 
   function hasValidSession(req: Request): boolean {
+    if (devBypass) {
+      console.warn('[telegram-auth] WARNING: development auth bypass accepted request');
+      return true;
+    }
     if (getSessionChatId(req) !== null) return true;
     if (staticTokens.length > 0 && typeof req.query['token'] === 'string') {
       return staticTokens.includes(req.query['token']);
@@ -70,7 +80,6 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
   }
 
   function requireSession(req: Request, res: Response, next: NextFunction): void {
-    if (!AUTH_ENABLED) { next(); return; }
     if (hasValidSession(req)) { next(); return; }
     res.status(401).json({ error: 'Unauthorized' });
   }
@@ -89,21 +98,27 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
 
   // nginx auth_request subrequest — 200 = allow, 401 = deny
   router.get('/check', (req: Request, res: Response) => {
-    if (!AUTH_ENABLED) { res.sendStatus(200); return; }
     res.sendStatus(hasValidSession(req) ? 200 : 401);
   });
 
   // Session status for frontend polling
   router.get('/status', (req: Request, res: Response) => {
+    const authenticated = hasValidSession(req);
+
     res.json({
-      authenticated: !AUTH_ENABLED || hasValidSession(req),
+      auth: AUTH_ENABLED ? (authenticated ? 'authenticated' : 'required') : 'not-configured',
+      authenticated,
       authEnabled: AUTH_ENABLED,
+      warnings,
     });
   });
 
   // Generate one-time token, send login link via Telegram
   router.post('/request', async (req: Request, res: Response) => {
-    if (!AUTH_ENABLED) { res.status(503).json({ error: 'Auth not configured' }); return; }
+    if (!AUTH_ENABLED) {
+      res.status(503).json({ auth: 'not-configured', error: 'Auth not configured' });
+      return;
+    }
 
     const ip = rateLimiter.getIp(req);
     const ua = req.headers['user-agent'] ?? 'unknown';
@@ -141,6 +156,11 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     const ua = req.headers['user-agent'] ?? 'unknown';
     const token = req.params.token;
 
+    if (!AUTH_ENABLED) {
+      res.status(503).json({ auth: 'not-configured', error: 'Auth not configured' });
+      return;
+    }
+
     const consumed = tokenStore.consume(token);
     if (!consumed.valid) {
       console.warn(`[telegram-auth] invalid/expired token from ${ip}`);
@@ -155,5 +175,5 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     res.redirect('/');
   });
 
-  return { router, requireSession, AUTH_ENABLED, sendLoginLink, getSessionChatId };
+  return { router, requireSession, AUTH_ENABLED, warnings, sendLoginLink, getSessionChatId };
 }
