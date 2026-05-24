@@ -15,6 +15,8 @@ export interface TelegramAuthConfig {
   sessionMaxAge?: number;
   /** Whether to add the Secure attribute to the session cookie. Default: false */
   secureCookie?: boolean;
+  /** Development-only bypass for local auth debugging. Never enable in production. */
+  devBypass?: boolean;
   /** One-time token max age in ms. Default: 2 hours */
   tokenMaxAge?: number;
   /** Rate limit for login requests. Default: 3 per 10 minutes per IP */
@@ -34,10 +36,12 @@ export interface TelegramAuthConfig {
 export interface TelegramAuth {
   /** Express router mounting POST /request, GET /login/:token, GET /check, GET /status */
   router: import('express').Router;
-  /** Express middleware requiring a valid session. Passes through if auth is disabled. */
+  /** Express middleware requiring a valid session. */
   requireSession: import('express').RequestHandler;
   /** Whether auth is enabled (chatIds configured) */
   AUTH_ENABLED: boolean;
+  /** Runtime auth warnings that consumers may surface in health checks. */
+  warnings: string[];
   /**
    * Generate a one-time login link and send it to a specific chat.
    * Useful for bot /login commands.
