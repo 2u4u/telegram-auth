@@ -5,7 +5,12 @@ export type SessionValidation =
   | { valid: true; chatId: string }
   | { valid: false };
 
-export function createSessionManager(secret: string, cookieName: string, maxAgeMs: number) {
+export function createSessionManager(
+  secret: string,
+  cookieName: string,
+  maxAgeMs: number,
+  secureCookie = false,
+) {
   function sign(chatId: string, ts: number): string {
     return crypto.createHmac('sha256', secret).update(`${chatId}:${ts}`).digest('hex');
   }
@@ -25,9 +30,10 @@ export function createSessionManager(secret: string, cookieName: string, maxAgeM
   function set(res: Response, chatId: string): void {
     const ts = Date.now();
     const value = `${chatId}:${ts}:${sign(chatId, ts)}`;
+    const secureAttribute = secureCookie ? '; Secure' : '';
     res.setHeader(
       'Set-Cookie',
-      `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(maxAgeMs / 1000)}`,
+      `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(maxAgeMs / 1000)}${secureAttribute}`,
     );
   }
 

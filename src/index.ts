@@ -26,6 +26,7 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     appUrl,
     appName = 'App',
     sessionMaxAge = 24 * 60 * 60_000,
+    secureCookie = false,
     tokenMaxAge = 2 * 60 * 60_000,
     rateLimit: rateLimitConfig = { max: 3, windowMs: 10 * 60_000 },
     geoLookup = true,
@@ -49,7 +50,7 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     console.log('[telegram-auth] disabled — set chatIds to enable');
   }
 
-  const session = createSessionManager(sessionSecret, cookieName, sessionMaxAge);
+  const session = createSessionManager(sessionSecret, cookieName, sessionMaxAge, secureCookie);
   const tokenStore = createTokenStore(tokenMaxAge);
   const rateLimiter = createRateLimiter(rateLimitConfig.max, rateLimitConfig.windowMs);
   const normalizedAppUrl = appUrl.replace(/\/$/, '');

@@ -13,6 +13,8 @@ export interface TelegramAuthConfig {
   appName?: string;
   /** Session cookie max age in ms. Default: 24 hours */
   sessionMaxAge?: number;
+  /** Whether to add the Secure attribute to the session cookie. Default: false */
+  secureCookie?: boolean;
   /** One-time token max age in ms. Default: 2 hours */
   tokenMaxAge?: number;
   /** Rate limit for login requests. Default: 3 per 10 minutes per IP */
