@@ -59,6 +59,7 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
 
   const session = createSessionManager(sessionSecret, cookieName, sessionMaxAge, secureCookie);
   const tokenStore = createTokenStore(tokenMaxAge);
+  const tokenCleanupInterval = createTokenCleanupInterval(tokenStore);
   const rateLimiter = createRateLimiter(rateLimitConfig.max, rateLimitConfig.windowMs);
   const normalizedAppUrl = appUrl.replace(/\/$/, '');
 
@@ -175,5 +176,19 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     res.redirect('/');
   });
 
-  return { router, requireSession, AUTH_ENABLED, warnings, sendLoginLink, getSessionChatId };
+  function dispose(): void {
+    clearInterval(tokenCleanupInterval);
+  }
+
+  return { router, requireSession, AUTH_ENABLED, warnings, sendLoginLink, getSessionChatId, dispose };
+}
+
+export function createTokenCleanupInterval(
+  tokenStore: Pick<ReturnType<typeof createTokenStore>, 'cleanup'>,
+): NodeJS.Timeout {
+  const handle = setInterval(() => {
+    tokenStore.cleanup();
+  }, 60_000);
+  handle.unref?.();
+  return handle;
 }
