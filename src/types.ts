@@ -54,4 +54,6 @@ export interface TelegramAuth {
    * separately (e.g. via a token→chatId mapping env var).
    */
   getSessionChatId: (req: import('express').Request) => string | null;
+  /** Clear background auth timers before shutting down or disposing test instances. */
+  dispose: () => void;
 }

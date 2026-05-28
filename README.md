@@ -108,7 +108,7 @@ const auth = createTelegramAuth({
   sessionMaxAge: 24 * 60 * 60_000,
 });
 
-export const { router: authRouter, requireSession, AUTH_ENABLED } = auth;
+export const { router: authRouter, requireSession, AUTH_ENABLED, dispose } = auth;
 ```
 
 **3. Mount in Express**
