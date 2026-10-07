@@ -1,4 +1,6 @@
-const LOGIN_MESSAGE_ENDPOINT = 'http://mssge.ru/api/send-message';
+// HTTPS only: the message carries the one-time login URL, which is a credential.
+// (Plain http:// is also answered with a 301, and fetch turns a redirected POST into a GET.)
+const LOGIN_MESSAGE_ENDPOINT = 'https://mssge.ru/api/send-message';
 
 export async function sendTelegramMessage(_botToken: string | undefined, _chatId: string, text: string): Promise<boolean> {
   try {
