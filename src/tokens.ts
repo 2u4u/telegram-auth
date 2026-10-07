@@ -13,6 +13,12 @@ export function createTokenStore(maxAgeMs: number) {
     return token;
   }
 
+  /** Whether a token is currently usable — without using it up. */
+  function peek(token: string): boolean {
+    const entry = tokens.get(token);
+    return entry !== undefined && entry.expiresAt >= Date.now();
+  }
+
   function consume(token: string): TokenConsumeResult {
     const entry = tokens.get(token);
     tokens.delete(token);
@@ -27,5 +33,5 @@ export function createTokenStore(maxAgeMs: number) {
     }
   }
 
-  return { generate, consume, cleanup };
+  return { generate, peek, consume, cleanup };
 }

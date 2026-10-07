@@ -13,7 +13,7 @@ Copy `src/` into your project and import directly. No package dependency, no cro
 1. User visits a protected page → nginx `auth_request` hits `/api/auth/check`
 2. No valid session cookie → nginx returns 302 to `/login.html`
 3. User clicks "Send login link" → `POST /api/auth/request` → server generates a UUID token and sends a Telegram message with `APP_URL/api/auth/login/<token>`
-4. User taps the link → `GET /api/auth/login/<token>` → token consumed, HMAC-signed session cookie set, redirect to `/`
+4. User taps the link → `GET /api/auth/login/<token>` → a tiny page that auto-submits `POST /api/auth/login/<token>` → token consumed, HMAC-signed session cookie set, 303 to `/`. The GET never consumes the token: Telegram (and other link-preview fetchers) request every delivered link before the user taps it.
 5. All subsequent requests pass the cookie; `/api/auth/check` returns 200
 
 No passwords. No email. Telegram is the identity provider.
