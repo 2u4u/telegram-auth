@@ -34,7 +34,7 @@ export interface TelegramAuthConfig {
 }
 
 export interface TelegramAuth {
-  /** Express router mounting POST /request, GET /login/:token, GET /check, GET /status */
+  /** Express router mounting POST /request, GET + POST /login/:token, GET /check, GET /status */
   router: import('express').Router;
   /** Express middleware requiring a valid session. */
   requireSession: import('express').RequestHandler;

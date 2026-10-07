@@ -19,6 +19,23 @@ const EXPIRED_HTML =
   '<p>Go back to <a href="/" style="color:#60a5fa">the app</a> to request a new one.</p>' +
   '</div></body></html>';
 
+// Shown by GET /login/:token. Link-preview fetchers (Telegram builds a preview for every
+// link it delivers) issue a GET before the user taps; if that GET consumed the one-time
+// token, the user's own tap would always land on "expired". So GET only shows this page,
+// and the token is consumed by the POST it submits. Preview bots neither run scripts nor
+// submit forms; a real browser auto-submits, so the user still taps once.
+const CONFIRM_HTML =
+  '<!doctype html><html><head><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">' +
+  '<title>Signing in…</title></head>' +
+  '<body style="background:#0a0a0a;color:#999;font-family:system-ui;' +
+  'display:flex;align-items:center;justify-content:center;height:100vh;margin:0">' +
+  '<form method="post" style="text-align:center">' +
+  '<h2 style="color:#e5e5e5;font-weight:500">Signing you in…</h2>' +
+  '<button type="submit" style="margin-top:12px;padding:10px 22px;border:0;border-radius:10px;' +
+  'background:#36995a;color:#fff;font:500 15px system-ui;cursor:pointer">Continue</button>' +
+  '</form><script>document.forms[0].submit()</script></body></html>';
+
 export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
   const {
     cookieName,
@@ -151,8 +168,22 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     res.json({ ok: true });
   });
 
-  // Verify one-time token → set session cookie → redirect to app
+  // Step 1 of the login link — never consumes the token (see CONFIRM_HTML).
   router.get('/login/:token', (req: Request<{ token: string }>, res: Response) => {
+    if (!AUTH_ENABLED) {
+      res.status(503).json({ auth: 'not-configured', error: 'Auth not configured' });
+      return;
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    if (!tokenStore.peek(req.params.token)) {
+      res.status(401).send(EXPIRED_HTML);
+      return;
+    }
+    res.send(CONFIRM_HTML);
+  });
+
+  // Step 2: consume the one-time token → set session cookie → redirect to app
+  router.post('/login/:token', (req: Request<{ token: string }>, res: Response) => {
     const ip = rateLimiter.getIp(req);
     const ua = req.headers['user-agent'] ?? 'unknown';
     const token = req.params.token;
@@ -173,7 +204,8 @@ export function createTelegramAuth(config: TelegramAuthConfig): TelegramAuth {
     session.set(res, consumed.chatId);
     console.log(`[telegram-auth] session created — chat ${consumed.chatId} | IP: ${ip} | UA: ${ua}`);
     onSessionCreated?.(ip, ua);
-    res.redirect('/');
+    // 303: the browser follows with a GET, never re-POSTs.
+    res.redirect(303, '/');
   });
 
   function dispose(): void {
